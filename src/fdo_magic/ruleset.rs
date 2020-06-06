@@ -50,7 +50,7 @@ fn magic_rules(input: &[u8]) -> IResult<&[u8], super::MagicRule> {
 /// to a vector of MagicEntry structs
 fn ruleset(input: &[u8]) -> IResult<&[u8], Vec<(MIME, Vec<super::MagicRule>)>> {
     // Parse the MIME type from "[priority: mime]"
-    let mime = map(map_res(
+    let mime = map_res(map_res(
         terminated(
             delimited(
                 delimited(tag("["), is_not(":"), tag(":")), // priority
