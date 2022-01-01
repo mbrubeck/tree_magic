@@ -1,6 +1,6 @@
 [package]
 name = "tree_magic_mini"
-version = "3.0.2"
+version = "3.0.3"
 authors = [
     "Matt Brubeck <mbrubeck@limpet.net>",
     "Allison Hancock <aahancoc@umich.edu>",
