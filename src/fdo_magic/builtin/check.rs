@@ -1,4 +1,4 @@
-use crate::{fdo_magic, read_bytes, MIME};
+use crate::{fdo_magic, read_bytes, Mime};
 use fnv::FnvHashMap;
 use petgraph::prelude::*;
 use std::path::Path;
@@ -14,15 +14,15 @@ impl crate::Checker for FdoMagic {
         from_filepath(filepath, mimetype)
     }
 
-    fn get_supported(&self) -> Vec<MIME> {
+    fn get_supported(&self) -> Vec<Mime> {
         super::init::get_supported()
     }
 
-    fn get_subclasses(&self) -> Vec<(MIME, MIME)> {
+    fn get_subclasses(&self) -> Vec<(Mime, Mime)> {
         super::init::get_subclasses()
     }
 
-    fn get_aliaslist(&self) -> FnvHashMap<MIME, MIME> {
+    fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime> {
         super::init::get_aliaslist()
     }
 }

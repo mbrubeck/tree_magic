@@ -1,4 +1,4 @@
-use crate::MIME;
+use crate::Mime;
 use fnv::FnvHashMap;
 
 #[cfg(not(feature = "with-gpl-data"))]
@@ -18,7 +18,7 @@ fn subclasses() -> &'static str {
     return runtime::subclasses();
 }
 
-pub fn get_aliaslist() -> FnvHashMap<MIME, MIME> {
+pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
     aliases()
         .lines()
         .map(|line| {
@@ -31,12 +31,12 @@ pub fn get_aliaslist() -> FnvHashMap<MIME, MIME> {
 }
 
 /// Get list of supported MIME types
-pub fn get_supported() -> Vec<MIME> {
+pub fn get_supported() -> Vec<Mime> {
     super::ALLRULES.keys().cloned().collect()
 }
 
 /// Get list of parent -> child subclass links
-pub fn get_subclasses() -> Vec<(MIME, MIME)> {
+pub fn get_subclasses() -> Vec<(Mime, Mime)> {
     subclasses()
         .lines()
         .map(|line| {

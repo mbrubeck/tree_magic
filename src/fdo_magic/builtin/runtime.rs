@@ -9,7 +9,7 @@ use petgraph::prelude::DiGraph;
 
 use super::MagicRule;
 use crate::fdo_magic::ruleset;
-use crate::MIME;
+use crate::Mime;
 
 static RUNTIME_RULES: OnceCell<Vec<Vec<u8>>> = OnceCell::new();
 static ALIAS_STRING: OnceCell<String> = OnceCell::new();
@@ -89,7 +89,7 @@ pub(crate) fn subclasses() -> &'static str {
     SUBCLASS_STRING.get_or_init(load_subclasses)
 }
 
-pub(crate) fn rules() -> Result<FnvHashMap<MIME, DiGraph<MagicRule<'static>, u32>>, String> {
+pub(crate) fn rules() -> Result<FnvHashMap<Mime, DiGraph<MagicRule<'static>, u32>>, String> {
     let files = RUNTIME_RULES.get_or_try_init(load_xdg_shared_magic)?;
     ruleset::from_multiple(files)
 }

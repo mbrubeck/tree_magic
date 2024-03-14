@@ -1,12 +1,12 @@
-use crate::MIME;
+use crate::Mime;
 use fnv::FnvHashMap;
 
-pub fn get_supported() -> Vec<MIME> {
+pub fn get_supported() -> Vec<Mime> {
     super::TYPES.to_vec()
 }
 
 /// Returns Vec of parent->child relations
-pub fn get_subclasses() -> Vec<(MIME, MIME)> {
+pub fn get_subclasses() -> Vec<(Mime, Mime)> {
     vec![
         ("all/all", "all/allfiles"),
         ("all/all", "inode/directory"),
@@ -15,6 +15,6 @@ pub fn get_subclasses() -> Vec<(MIME, MIME)> {
     ]
 }
 
-pub fn get_aliaslist() -> FnvHashMap<MIME, MIME> {
+pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
     FnvHashMap::default()
 }

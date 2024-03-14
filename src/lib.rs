@@ -64,7 +64,7 @@ use std::path::Path;
 mod basetype;
 mod fdo_magic;
 
-type MIME = &'static str;
+type Mime = &'static str;
 
 /// Check these types first
 /// TODO: Poll these from the checkers? Feels a bit arbitrary
@@ -80,9 +80,9 @@ const TYPEORDER: [&str; 6] = [
 pub(crate) trait Checker: Send + Sync {
     fn from_u8(&self, file: &[u8], mimetype: &str) -> bool;
     fn from_filepath(&self, filepath: &Path, mimetype: &str) -> bool;
-    fn get_supported(&self) -> Vec<MIME>;
-    fn get_subclasses(&self) -> Vec<(MIME, MIME)>;
-    fn get_aliaslist(&self) -> FnvHashMap<MIME, MIME>;
+    fn get_supported(&self) -> Vec<Mime>;
+    fn get_subclasses(&self) -> Vec<(Mime, Mime)>;
+    fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime>;
 }
 
 static CHECKERS: &[&'static dyn Checker] = &[
@@ -92,8 +92,8 @@ static CHECKERS: &[&'static dyn Checker] = &[
 
 /// Mappings between modules and supported mimes
 lazy_static! {
-    static ref CHECKER_SUPPORT: FnvHashMap<MIME, &'static dyn Checker> = {
-        let mut out = FnvHashMap::<MIME, &'static dyn Checker>::default();
+    static ref CHECKER_SUPPORT: FnvHashMap<Mime, &'static dyn Checker> = {
+        let mut out = FnvHashMap::<Mime, &'static dyn Checker>::default();
         for &c in CHECKERS {
             for m in c.get_supported() {
                 out.insert(m, c);
@@ -104,8 +104,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref ALIASES: FnvHashMap<MIME, MIME> = {
-        let mut out = FnvHashMap::<MIME, MIME>::default();
+    static ref ALIASES: FnvHashMap<Mime, Mime> = {
+        let mut out = FnvHashMap::<Mime, Mime>::default();
         for &c in CHECKERS {
             out.extend(c.get_aliaslist());
         }
@@ -123,7 +123,7 @@ lazy_static! {
 /// The root of the graph is "all/all", so start traversing there unless
 /// you need to jump to a particular node.
 struct TypeStruct {
-    graph: DiGraph<MIME, u32>,
+    graph: DiGraph<Mime, u32>,
 }
 
 lazy_static! {
@@ -133,12 +133,12 @@ lazy_static! {
 
 // Initialize filetype graph
 fn graph_init() -> TypeStruct {
-    let mut graph = DiGraph::<MIME, u32>::new();
-    let mut added_mimes = FnvHashMap::<MIME, NodeIndex>::default();
+    let mut graph = DiGraph::<Mime, u32>::new();
+    let mut added_mimes = FnvHashMap::<Mime, NodeIndex>::default();
 
     // Get list of MIME types and MIME relations
-    let mut mimelist = Vec::<MIME>::new();
-    let mut edgelist_raw = Vec::<(MIME, MIME)>::new();
+    let mut mimelist = Vec::<Mime>::new();
+    let mut edgelist_raw = Vec::<(Mime, Mime)>::new();
     for &c in CHECKERS {
         mimelist.extend(c.get_supported());
         edgelist_raw.extend(c.get_subclasses());
@@ -244,7 +244,7 @@ fn graph_init() -> TypeStruct {
 }
 
 /// Just the part of from_*_node that walks the graph
-fn typegraph_walker<T, F>(parentnode: NodeIndex, input: &T, matchfn: F) -> Option<MIME>
+fn typegraph_walker<T, F>(parentnode: NodeIndex, input: &T, matchfn: F) -> Option<Mime>
 where
     T: ?Sized,
     F: Fn(&str, &T) -> bool,
@@ -327,7 +327,7 @@ pub fn match_u8(mimetype: &str, bytes: &[u8]) -> bool {
 /// Will panic if the given node is not found in the graph.
 /// As the graph is immutable, this should not happen if the node index comes from
 /// TYPE.hash.
-fn from_u8_node(parentnode: NodeIndex, bytes: &[u8]) -> Option<MIME> {
+fn from_u8_node(parentnode: NodeIndex, bytes: &[u8]) -> Option<Mime> {
     typegraph_walker(parentnode, bytes, match_u8_noalias)
 }
 
@@ -344,7 +344,7 @@ fn from_u8_node(parentnode: NodeIndex, bytes: &[u8]) -> Option<MIME> {
 /// let result = tree_magic_mini::from_u8(input);
 /// assert_eq!(result, "image/gif");
 /// ```
-pub fn from_u8(bytes: &[u8]) -> MIME {
+pub fn from_u8(bytes: &[u8]) -> Mime {
     let node = match TYPE.graph.externals(Incoming).next() {
         Some(foundnode) => foundnode,
         None => panic!("No filetype definitions are loaded."),
@@ -392,7 +392,7 @@ pub fn match_filepath(mimetype: &str, filepath: &Path) -> bool {
 /// Will panic if the given node is not found in the graph.
 /// As the graph is immutable, this should not happen if the node index comes from
 /// `TYPE.hash`.
-fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<MIME> {
+fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<Mime> {
     // We're actually just going to thunk this down to a u8
     // unless we're checking via basetype for speed reasons.
 
@@ -430,7 +430,7 @@ fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<MIME> {
 /// let result = tree_magic_mini::from_filepath(path);
 /// assert_eq!(result, Some("image/gif"));
 /// ```
-pub fn from_filepath(filepath: &Path) -> Option<MIME> {
+pub fn from_filepath(filepath: &Path) -> Option<Mime> {
     let node = match TYPE.graph.externals(Incoming).next() {
         Some(foundnode) => foundnode,
         None => panic!("No filetype definitions are loaded."),
