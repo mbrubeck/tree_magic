@@ -1,4 +1,4 @@
-use super::ALLRULES;
+use super::ALL_RULES;
 use crate::{fdo_magic::check::from_u8_walker, read_bytes, Mime};
 use fnv::FnvHashMap;
 use petgraph::prelude::*;
@@ -32,7 +32,7 @@ impl crate::Checker for FdoMagic {
 #[allow(unused_variables)]
 pub fn from_u8(file: &[u8], mimetype: &str) -> bool {
     // Get magic ruleset
-    let Some(graph) = ALLRULES.get(mimetype) else {
+    let Some(graph) = ALL_RULES.get(mimetype) else {
         return false;
     };
 
@@ -47,7 +47,7 @@ pub fn from_u8(file: &[u8], mimetype: &str) -> bool {
 #[allow(unused_variables)]
 pub fn from_filepath(filepath: &Path, mimetype: &str) -> bool {
     // Get magic ruleset
-    let Some(magic_rules) = ALLRULES.get(mimetype) else {
+    let Some(magic_rules) = ALL_RULES.get(mimetype) else {
         return false;
     };
 

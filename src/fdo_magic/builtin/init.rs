@@ -32,7 +32,7 @@ pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
 
 /// Get list of supported MIME types
 pub fn get_supported() -> Vec<Mime> {
-    super::ALLRULES.keys().cloned().collect()
+    super::ALL_RULES.keys().cloned().collect()
 }
 
 /// Get list of parent -> child subclass links

@@ -61,7 +61,7 @@ There's a couple things that lead to this. Mainly:
 
 - The most common types (image/png, image/jpeg, application/zip, etc.) are checked before the exotic ones.
 
-- Everything that can be processed in a lazy_static! is.
+- Everything that can be lazily initialized is.
 
 Nightly users can also run `cargo bench` for some benchmarks. For tree_magic 0.2.0 on the same hardware:
 

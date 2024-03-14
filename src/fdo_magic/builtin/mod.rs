@@ -3,18 +3,14 @@
 use super::MagicRule;
 use crate::Mime;
 use fnv::FnvHashMap;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use petgraph::prelude::*;
 
 /// Preload alias list
-lazy_static! {
-    static ref ALIASES: FnvHashMap<Mime, Mime> = init::get_aliaslist();
-}
+static ALIASES: Lazy<FnvHashMap<Mime, Mime>> = Lazy::new(init::get_aliaslist);
 
 /// Load magic file before anything else.
-lazy_static! {
-    static ref ALLRULES: FnvHashMap<Mime, DiGraph<MagicRule<'static>, u32>> = rules();
-}
+static ALL_RULES: Lazy<FnvHashMap<Mime, DiGraph<MagicRule<'static>, u32>>> = Lazy::new(rules);
 
 pub mod check;
 pub mod init;
