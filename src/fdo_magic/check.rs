@@ -1,4 +1,5 @@
 use petgraph::prelude::*;
+use std::iter::zip;
 
 fn from_u8_singlerule(file: &[u8], rule: &super::MagicRule) -> bool {
     // Check if we're even in bounds
@@ -8,89 +9,25 @@ fn from_u8_singlerule(file: &[u8], rule: &super::MagicRule) -> bool {
     if (file.len()) < bound_max {
         return false;
     }
+    let testarea = &file[bound_min..bound_max];
 
-    if rule.region_len == 0 {
-        //println!("Region == 0");
-
+    testarea.windows(rule.val.len()).any(|window| {
+        // Apply mask to value
         match rule.mask {
-            None => {
-                //println!("\tMask == None");
-                let x: Vec<u8> = file
-                    .iter()
-                    .skip(bound_min)
-                    .take(bound_max - bound_min)
-                    .copied()
-                    .collect();
-                //println!("\t{:?} / {:?}", x, rule.val);
-                //println!("\tIndent: {}, Start: {}", rule.indent_level, rule.start_off);
-                return rule.val.iter().eq(x.iter());
-            }
-            Some(ref mask) => {
-                //println!("\tMask == Some, len == {}", mask.len());
-                //println!("\tIndent: {}, Start: {}", rule.indent_level, rule.start_off);
-                let mut x: Vec<u8> = file
-                    .iter()
-                    .skip(bound_min) // Skip to start of area
-                    .take(bound_max - bound_min) // Take until end of area - region length
-                    .copied()
-                    .collect(); // Convert to vector
-                let mut val: Vec<u8> = rule.val.iter().copied().collect();
-                //println!("\t{:?} / {:?}", x, rule.val);
-
-                assert_eq!(x.len(), mask.len());
-                for i in 0..std::cmp::min(x.len(), mask.len()) {
-                    x[i] &= mask[i];
-                    val[i] &= mask[i];
-                }
-                //println!("\t & {:?} => {:?}", mask, x);
-
-                return rule.val.iter().eq(x.iter());
+            None => rule.val == window,
+            Some(mask) => {
+                assert_eq!(window.len(), mask.len());
+                let masked = zip(window, mask).map(|(a, b)| a & b);
+                rule.val.iter().copied().eq(masked)
             }
         }
-    } else {
-        //println!("\tRegion == {}", rule.region_len);
-        //println!("\tIndent: {}, Start: {}", rule.indent_level, rule.start_off);
-
-        // Define our testing slice
-        let x: &Vec<u8> = &file.iter().take(file.len()).copied().collect();
-        let testarea: Vec<u8> = x
-            .iter()
-            .skip(bound_min)
-            .take(bound_max - bound_min)
-            .copied()
-            .collect();
-        //println!("{:?}, {:?}, {:?}\n", file, testarea, rule.val);
-
-        // Search down until we find a hit
-        let mut y = Vec::<u8>::with_capacity(testarea.len());
-        for x in testarea.windows(rule.val.len()) {
-            y.clear();
-
-            // Apply mask to value
-            let rule_mask = &rule.mask;
-            match *rule_mask {
-                Some(ref mask) => {
-                    for i in 0..rule.val.len() {
-                        y.push(x[i] & mask[i]);
-                    }
-                }
-                None => y = x.to_vec(),
-            }
-
-            if y.iter().eq(rule.val.iter()) {
-                return true;
-            }
-        }
-    }
-
-    false
+    })
 }
 
 /// Test every given rule by walking graph
 /// TODO: Not loving the code duplication here.
 pub fn from_u8_walker(
     file: &[u8],
-    mimetype: &str,
     graph: &DiGraph<super::MagicRule, u32>,
     node: NodeIndex,
     isroot: bool,
@@ -101,7 +38,7 @@ pub fn from_u8_walker(
         let rule = &graph[node];
 
         // Check root
-        if !from_u8_singlerule(&file, rule) {
+        if !from_u8_singlerule(file, rule) {
             return false;
         }
 
@@ -117,10 +54,10 @@ pub fn from_u8_walker(
     for y in n {
         let rule = &graph[y];
 
-        if from_u8_singlerule(&file, rule) {
+        if from_u8_singlerule(file, rule) {
             // Check next indent level if needed
             if graph.neighbors_directed(y, Outgoing).count() != 0 {
-                return from_u8_walker(file, mimetype, graph, y, false);
+                return from_u8_walker(file, graph, y, false);
             // Next indent level is lower, so this must be it
             } else {
                 return true;

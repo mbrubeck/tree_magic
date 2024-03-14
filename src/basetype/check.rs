@@ -33,11 +33,10 @@ fn is_text_plain_from_u8(b: &[u8]) -> bool {
 
 // TODO: Hoist the main logic here somewhere else. This'll get redundant fast!
 fn is_text_plain_from_filepath(filepath: &Path) -> bool {
-    let b = match read_bytes(filepath, 512) {
-        Ok(x) => x,
-        Err(_) => return false,
+    let Ok(bytes) = read_bytes(filepath, 512) else {
+        return false;
     };
-    is_text_plain_from_u8(b.as_slice())
+    is_text_plain_from_u8(&bytes)
 }
 
 #[allow(unused_variables)]
@@ -59,11 +58,8 @@ pub fn from_filepath(filepath: &Path, mimetype: &str) -> bool {
 
     // Being bad with error handling here,
     // but if you can't open it it's probably not a file.
-    let meta = match fs::metadata(filepath) {
-        Ok(x) => x,
-        Err(_) => {
-            return false;
-        }
+    let Ok(meta) = fs::metadata(filepath) else {
+        return false;
     };
 
     match mimetype {

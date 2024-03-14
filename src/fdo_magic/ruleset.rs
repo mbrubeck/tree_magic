@@ -27,7 +27,7 @@ fn magic_rules(input: &[u8]) -> IResult<&[u8], MagicRule<'_>> {
         be_u16,
     ))(input)?;
 
-    let (input, (val, mask, word_len, region_len)) = terminated(
+    let (input, (val, mask, _word_len, region_len)) = terminated(
         tuple((
             take(val_len),
             opt(preceded(tag("&"), take(val_len))),
@@ -44,7 +44,6 @@ fn magic_rules(input: &[u8]) -> IResult<&[u8], MagicRule<'_>> {
             start_off,
             val,
             mask,
-            word_len: word_len.unwrap_or(1),
             region_len: region_len.unwrap_or(0),
         },
     ))
@@ -111,9 +110,9 @@ pub fn from_u8(b: &[u8]) -> Result<FnvHashMap<&str, DiGraph<MagicRule<'_>, u32>>
 
 #[cfg(not(feature = "with-gpl-data"))]
 /// Parse multiple ruleset magic files and aggregate the tuples into a single graph
-pub fn from_multiple<'a>(
-    files: &'a [Vec<u8>],
-) -> Result<FnvHashMap<&'a str, DiGraph<MagicRule<'_>, u32>>, String> {
+pub fn from_multiple(
+    files: &[Vec<u8>],
+) -> Result<FnvHashMap<&str, DiGraph<MagicRule<'_>, u32>>, String> {
     let mut tuplevec = vec![];
     for slice in files {
         tuplevec.append(&mut ruleset(slice.as_ref()).map_err(|e| e.to_string())?.1);

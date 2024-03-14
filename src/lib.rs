@@ -157,64 +157,35 @@ fn graph_init() -> TypeStruct {
         edgelist_raw.len(),
         Default::default(),
     );
-    for x in edgelist_raw {
-        let child_raw = x.0;
-        let parent_raw = x.1;
-
-        let parent = match added_mimes.get(&parent_raw) {
-            Some(node) => *node,
-            None => {
-                continue;
-            }
+    for (child_raw, parent_raw) in &edgelist_raw {
+        let Some(parent) = added_mimes.get(parent_raw) else {
+            continue;
         };
-
-        let child = match added_mimes.get(&child_raw) {
-            Some(node) => *node,
-            None => {
-                continue;
-            }
+        let Some(child) = added_mimes.get(child_raw) else {
+            continue;
         };
-
-        edge_list.insert((child, parent));
+        edge_list.insert((*child, *parent));
     }
 
     graph.extend_with_edges(&edge_list);
 
     //Add to applicaton/octet-stream, all/all, or text/plain, depending on top-level
     //(We'll just do it here because having the graph makes it really nice)
-    let added_mimes_tmp = added_mimes.clone();
-    let node_text = match added_mimes_tmp.get("text/plain") {
-        Some(x) => *x,
-        None => {
-            let node = graph.add_node("text/plain");
-            added_mimes.insert("text/plain", node);
-            node
-        }
-    };
-    let node_octet = match added_mimes_tmp.get("application/octet-stream") {
-        Some(x) => *x,
-        None => {
-            let node = graph.add_node("application/octet-stream");
-            added_mimes.insert("application/octet-stream", node);
-            node
-        }
-    };
-    let node_allall = match added_mimes_tmp.get("all/all") {
-        Some(x) => *x,
-        None => {
-            let node = graph.add_node("all/all");
-            added_mimes.insert("all/all", node);
-            node
-        }
-    };
-    let node_allfiles = match added_mimes_tmp.get("all/allfiles") {
-        Some(x) => *x,
-        None => {
-            let node = graph.add_node("all/allfiles");
-            added_mimes.insert("all/allfiles", node);
-            node
-        }
-    };
+    let node_text = *added_mimes
+        .entry("text/plain")
+        .or_insert_with(|| graph.add_node("text/plain"));
+
+    let node_octet = *added_mimes
+        .entry("application/octet-stream")
+        .or_insert_with(|| graph.add_node("application/octet-stream"));
+
+    let node_allall = *added_mimes
+        .entry("all/all")
+        .or_insert_with(|| graph.add_node("all/all"));
+
+    let node_allfiles = *added_mimes
+        .entry("all/allfiles")
+        .or_insert_with(|| graph.add_node("all/allfiles"));
 
     let mut edge_list_2 = FnvHashSet::<(NodeIndex, NodeIndex)>::default();
     for mimenode in graph.externals(Incoming) {
@@ -257,7 +228,7 @@ where
 
     for i in 0..children.len() {
         let x = children[i];
-        if TYPEORDER.contains(&&*TYPE.graph[x]) {
+        if TYPEORDER.contains(&TYPE.graph[x]) {
             children.remove(i);
             children.insert(0, x);
         }
@@ -357,7 +328,7 @@ pub fn from_u8(bytes: &[u8]) -> Mime {
 fn match_filepath_noalias(mimetype: &str, filepath: &Path) -> bool {
     match CHECKER_SUPPORT.get(mimetype) {
         None => false,
-        Some(c) => c.from_filepath(&filepath, mimetype),
+        Some(c) => c.from_filepath(filepath, mimetype),
     }
 }
 
@@ -404,13 +375,8 @@ fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<Mime> {
 
     // Load the first 2K of file and parse as u8
     // for batch processing like this
-
-    let b = match read_bytes(filepath, 2048) {
-        Ok(x) => x,
-        Err(_) => return None,
-    };
-
-    from_u8_node(parentnode, b.as_slice())
+    let bytes = read_bytes(filepath, 2048).ok()?;
+    from_u8_node(parentnode, &bytes)
 }
 
 /// Gets the type of a file from a filepath.
@@ -431,11 +397,7 @@ fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<Mime> {
 /// assert_eq!(result, Some("image/gif"));
 /// ```
 pub fn from_filepath(filepath: &Path) -> Option<Mime> {
-    let node = match TYPE.graph.externals(Incoming).next() {
-        Some(foundnode) => foundnode,
-        None => panic!("No filetype definitions are loaded."),
-    };
-
+    let node = TYPE.graph.externals(Incoming).next()?;
     from_filepath_node(node, filepath)
 }
 

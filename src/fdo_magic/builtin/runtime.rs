@@ -25,8 +25,7 @@ fn load_xdg_shared_magic() -> Result<Vec<Vec<u8>>, String> {
 
     let files: Vec<Vec<u8>> = SEARCH_PATHS
         .iter()
-        .map(|p| File::open(p).ok())
-        .filter_map(|f| f)
+        .filter_map(|p| File::open(p).ok())
         .map(|mut f| {
             let mut buf = vec![];
             f.read_to_end(&mut buf)
@@ -46,8 +45,7 @@ fn load_xdg_shared_magic() -> Result<Vec<Vec<u8>>, String> {
 fn load_concat_strings(paths: &[&str]) -> String {
     let strings: Vec<String> = paths
         .iter()
-        .map(|p| File::open(p).ok())
-        .filter_map(|f| f)
+        .filter_map(|p| File::open(p).ok())
         .map(|mut f| {
             let mut s = String::new();
             f.read_to_string(&mut s)

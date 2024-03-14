@@ -3,14 +3,19 @@
 pub mod builtin;
 
 #[derive(Debug, Clone)]
-pub struct MagicRule<'a> {
-    pub indent_level: u32,
-    pub start_off: u32,
-    pub val: &'a [u8],
-    pub mask: Option<&'a [u8]>,
-    pub word_len: u32,
-    pub region_len: u32,
+struct MagicRule<'a> {
+    indent_level: u32,
+    start_off: u32,
+    val: &'a [u8],
+    mask: Option<&'a [u8]>,
+    region_len: u32,
 }
 
-pub mod check;
-pub mod ruleset;
+impl MagicRule<'_> {
+    fn scan_len(&self) -> usize {
+        self.start_off as usize + self.val.len() + self.region_len as usize
+    }
+}
+
+mod check;
+mod ruleset;
