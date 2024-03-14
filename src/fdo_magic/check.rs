@@ -1,15 +1,15 @@
 use petgraph::prelude::*;
 use std::iter::zip;
 
-fn from_u8_singlerule(file: &[u8], rule: &super::MagicRule) -> bool {
+fn from_u8_singlerule(bytes: &[u8], rule: &super::MagicRule) -> bool {
     // Check if we're even in bounds
     let bound_min = rule.start_off as usize;
     let bound_max = rule.start_off as usize + rule.val.len() + rule.region_len as usize;
 
-    if (file.len()) < bound_max {
+    if (bytes.len()) < bound_max {
         return false;
     }
-    let testarea = &file[bound_min..bound_max];
+    let testarea = &bytes[bound_min..bound_max];
 
     testarea.windows(rule.val.len()).any(|window| {
         // Apply mask to value
@@ -27,7 +27,7 @@ fn from_u8_singlerule(file: &[u8], rule: &super::MagicRule) -> bool {
 /// Test every given rule by walking graph
 /// TODO: Not loving the code duplication here.
 pub fn from_u8_walker(
-    file: &[u8],
+    bytes: &[u8],
     graph: &DiGraph<super::MagicRule, u32>,
     node: NodeIndex,
     isroot: bool,
@@ -38,7 +38,7 @@ pub fn from_u8_walker(
         let rule = &graph[node];
 
         // Check root
-        if !from_u8_singlerule(file, rule) {
+        if !from_u8_singlerule(bytes, rule) {
             return false;
         }
 
@@ -54,10 +54,10 @@ pub fn from_u8_walker(
     for y in n {
         let rule = &graph[y];
 
-        if from_u8_singlerule(file, rule) {
+        if from_u8_singlerule(bytes, rule) {
             // Check next indent level if needed
             if graph.neighbors_directed(y, Outgoing).count() != 0 {
-                return from_u8_walker(file, graph, y, false);
+                return from_u8_walker(bytes, graph, y, false);
             // Next indent level is lower, so this must be it
             } else {
                 return true;

@@ -53,12 +53,11 @@
 //! assert_eq!(result, true);
 //! ```
 
-#![allow(unused_doc_comments)]
-
-use fnv::FnvHashMap;
-use fnv::FnvHashSet;
+use fnv::{FnvHashMap, FnvHashSet};
 use once_cell::sync::Lazy;
 use petgraph::prelude::*;
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::Path;
 
 mod basetype;
@@ -78,8 +77,8 @@ const TYPEORDER: [&str; 6] = [
 ];
 
 trait Checker: Send + Sync {
-    fn match_bytes(&self, file: &[u8], mimetype: &str) -> bool;
-    fn match_filepath(&self, filepath: &Path, mimetype: &str) -> bool;
+    fn match_bytes(&self, bytes: &[u8], mimetype: &str) -> bool;
+    fn match_file(&self, file: &File, mimetype: &str) -> bool;
     fn get_supported(&self) -> Vec<Mime>;
     fn get_subclasses(&self) -> Vec<(Mime, Mime)>;
     fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime>;
@@ -315,19 +314,35 @@ pub fn from_u8(bytes: &[u8]) -> Mime {
     from_u8_node(node, bytes).unwrap()
 }
 
+/// Check if the given file matches the given MIME type.
+///
+/// # Examples
+/// ```rust
+/// use std::fs::File;
+///
+/// // Get path to a GIF file
+/// let file = File::open("tests/image/gif").unwrap();
+///
+/// // Check if the MIME and the file are a match
+/// let result = tree_magic_mini::match_file("image/gif", &file);
+/// assert_eq!(result, true);
+/// ```
+pub fn match_file(mimetype: &str, file: &File) -> bool {
+    match_file_noalias(get_alias(mimetype), file)
+}
+
 /// Internal function. Checks if an alias exists, and if it does,
-/// then runs `match_filepath`.
-fn match_filepath_noalias(mimetype: &str, filepath: &Path) -> bool {
+/// then runs `match_file`.
+fn match_file_noalias(mimetype: &str, file: &File) -> bool {
     match CHECKER_SUPPORT.get(mimetype) {
         None => false,
-        Some(c) => c.match_filepath(filepath, mimetype),
+        Some(c) => c.match_file(file, mimetype),
     }
 }
 
-/// Check if the given filepath matches the given MIME type.
+/// Check if the file at the given path matches the given MIME type.
 ///
-/// Returns true or false if it matches or not, or an Error if the file could
-/// not be read. If the given MIME type is not known, it will always return false.
+/// Returns false if the file could not be read or the given MIME type is not known.
 ///
 /// # Examples
 /// ```rust
@@ -340,12 +355,15 @@ fn match_filepath_noalias(mimetype: &str, filepath: &Path) -> bool {
 /// let result = tree_magic_mini::match_filepath("image/gif", path);
 /// assert_eq!(result, true);
 /// ```
-pub fn match_filepath(mimetype: &str, filepath: &Path) -> bool {
-    match_filepath_noalias(get_alias(mimetype), filepath)
+#[inline]
+pub fn match_filepath(mimetype: &str, path: &Path) -> bool {
+    let Ok(file) = File::open(path) else {
+        return false;
+    };
+    match_file(mimetype, &file)
 }
 
-/// Gets the type of a file from a filepath, starting at a certain node
-/// in the type graph.
+/// Gets the type of a file, starting at a certain node in the type graph.
 ///
 /// Returns MIME as string wrapped in Some if a type matches, or
 /// None if the file is not found or cannot be opened.
@@ -355,20 +373,42 @@ pub fn match_filepath(mimetype: &str, filepath: &Path) -> bool {
 /// Will panic if the given node is not found in the graph.
 /// As the graph is immutable, this should not happen if the node index comes from
 /// `TYPE.hash`.
-fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<Mime> {
+fn from_file_node(parentnode: NodeIndex, file: &File) -> Option<Mime> {
     // We're actually just going to thunk this down to a u8
     // unless we're checking via basetype for speed reasons.
 
     // Ensure it's at least a application/octet-stream
-    if !match_filepath("application/octet-stream", filepath) {
+    if !match_file("application/octet-stream", file) {
         // Check the other base types
-        return typegraph_walker(parentnode, filepath, match_filepath_noalias);
+        return typegraph_walker(parentnode, file, match_file_noalias);
     }
 
     // Load the first 2K of file and parse as u8
     // for batch processing like this
-    let bytes = read_bytes(filepath, 2048).ok()?;
+    let bytes = read_bytes(file, 2048).ok()?;
     from_u8_node(parentnode, &bytes)
+}
+
+/// Gets the type of a file.
+///
+/// Does not look at file name or extension, just the contents.
+/// Returns MIME as string wrapped in Some if a type matches, or
+/// None if the file is not found or cannot be opened.
+///
+/// # Examples
+/// ```rust
+/// use std::fs::File;
+///
+/// // Get path to a GIF file
+/// let file = File::open("tests/image/gif").unwrap();
+///
+/// // Find the MIME type of the GIF
+/// let result = tree_magic_mini::from_file(&file);
+/// assert_eq!(result, Some("image/gif"));
+/// ```
+pub fn from_file(file: &File) -> Option<Mime> {
+    let node = TYPE.graph.externals(Incoming).next()?;
+    from_file_node(node, file)
 }
 
 /// Gets the type of a file from a filepath.
@@ -382,24 +422,21 @@ fn from_filepath_node(parentnode: NodeIndex, filepath: &Path) -> Option<Mime> {
 /// use std::path::Path;
 ///
 /// // Get path to a GIF file
-/// let path: &Path = Path::new("tests/image/gif");
+/// let path = Path::new("tests/image/gif");
 ///
 /// // Find the MIME type of the GIF
 /// let result = tree_magic_mini::from_filepath(path);
 /// assert_eq!(result, Some("image/gif"));
 /// ```
-pub fn from_filepath(filepath: &Path) -> Option<Mime> {
-    let node = TYPE.graph.externals(Incoming).next()?;
-    from_filepath_node(node, filepath)
+#[inline]
+pub fn from_filepath(path: &Path) -> Option<Mime> {
+    let file = File::open(path).ok()?;
+    from_file(&file)
 }
 
 /// Reads the given number of bytes from a file
-fn read_bytes(filepath: &Path, bytecount: usize) -> Result<Vec<u8>, std::io::Error> {
-    use std::fs::File;
-    use std::io::prelude::*;
-
-    let mut b = Vec::<u8>::with_capacity(bytecount);
-    let f = File::open(filepath)?;
-    f.take(bytecount as u64).read_to_end(&mut b)?;
-    Ok(b)
+fn read_bytes(file: &File, bytecount: usize) -> Result<Vec<u8>, std::io::Error> {
+    let mut bytes = Vec::<u8>::with_capacity(bytecount);
+    file.take(bytecount as u64).read_to_end(&mut bytes)?;
+    Ok(bytes)
 }
