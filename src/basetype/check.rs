@@ -28,7 +28,7 @@ impl crate::Checker for BaseType {
 
 /// If there are any null bytes, return False. Otherwise return True.
 fn is_text_plain_from_u8(b: &[u8]) -> bool {
-    bytecount::count(b, 0) == 0
+    memchr::memchr(0, b).is_none()
 }
 
 // TODO: Hoist the main logic here somewhere else. This'll get redundant fast!

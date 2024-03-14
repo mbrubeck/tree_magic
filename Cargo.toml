@@ -20,7 +20,7 @@ petgraph = "0.6.0"
 nom = "7.0"
 lazy_static = "1.4"
 fnv = "1.0"
-bytecount = "0.6.0"
+memchr = "2.7"
 once_cell = "1.0"
 tree_magic_db = { version = "3.0", path = "./magic_db" , optional = true }
 
