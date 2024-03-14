@@ -9,10 +9,11 @@ description = "Determines the MIME type of a file by traversing a filetype tree.
 repository = "https://github.com/mbrubeck/tree_magic/"
 documentation = "https://docs.rs/tree_magic_mini/"
 readme = "README.md"
+categories = ["parser-implementations", "filesystem"]
 keywords = ["mime", "filesystem", "media-types"]
 license = "MIT"
 exclude = ["tests/*", "benches/*/"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 petgraph = "0.6.0"
