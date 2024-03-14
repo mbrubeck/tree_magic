@@ -6,7 +6,7 @@ fn from_u8_singlerule(bytes: &[u8], rule: &super::MagicRule) -> bool {
     let bound_min = rule.start_off as usize;
     let bound_max = rule.start_off as usize + rule.val.len() + rule.region_len as usize;
 
-    if (bytes.len()) < bound_max {
+    if bound_max > bytes.len() {
         return false;
     }
     let testarea = &bytes[bound_min..bound_max];
