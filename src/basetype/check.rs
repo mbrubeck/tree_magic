@@ -5,12 +5,12 @@ use std::path::Path;
 pub(crate) struct BaseType;
 
 impl crate::Checker for BaseType {
-    fn from_u8(&self, file: &[u8], mimetype: &str) -> bool {
-        from_u8(file, mimetype)
+    fn match_bytes(&self, file: &[u8], mimetype: &str) -> bool {
+        match_bytes(file, mimetype)
     }
 
-    fn from_filepath(&self, filepath: &Path, mimetype: &str) -> bool {
-        from_filepath(filepath, mimetype)
+    fn match_filepath(&self, filepath: &Path, mimetype: &str) -> bool {
+        match_filepath(filepath, mimetype)
     }
 
     fn get_supported(&self) -> Vec<Mime> {
@@ -40,7 +40,7 @@ fn is_text_plain_from_filepath(filepath: &Path) -> bool {
 }
 
 #[allow(unused_variables)]
-pub fn from_u8(b: &[u8], mimetype: &str) -> bool {
+pub fn match_bytes(b: &[u8], mimetype: &str) -> bool {
     if mimetype == "application/octet-stream" || mimetype == "all/allfiles" {
         // Both of these are the case if we have a bytestream at all
         return true;
@@ -53,7 +53,7 @@ pub fn from_u8(b: &[u8], mimetype: &str) -> bool {
     }
 }
 
-pub fn from_filepath(filepath: &Path, mimetype: &str) -> bool {
+pub fn match_filepath(filepath: &Path, mimetype: &str) -> bool {
     use std::fs;
 
     // Being bad with error handling here,

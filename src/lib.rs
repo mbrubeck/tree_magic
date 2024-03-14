@@ -77,9 +77,9 @@ const TYPEORDER: [&str; 6] = [
     "application/pdf",
 ];
 
-pub(crate) trait Checker: Send + Sync {
-    fn from_u8(&self, file: &[u8], mimetype: &str) -> bool;
-    fn from_filepath(&self, filepath: &Path, mimetype: &str) -> bool;
+trait Checker: Send + Sync {
+    fn match_bytes(&self, file: &[u8], mimetype: &str) -> bool;
+    fn match_filepath(&self, filepath: &Path, mimetype: &str) -> bool;
     fn get_supported(&self) -> Vec<Mime>;
     fn get_subclasses(&self) -> Vec<(Mime, Mime)>;
     fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime>;
@@ -252,11 +252,11 @@ fn get_alias(mimetype: &str) -> &str {
 }
 
 /// Internal function. Checks if an alias exists, and if it does,
-/// then runs `from_u8`.
+/// then runs `match_bytes`.
 fn match_u8_noalias(mimetype: &str, bytes: &[u8]) -> bool {
     match CHECKER_SUPPORT.get(mimetype) {
         None => false,
-        Some(y) => y.from_u8(bytes, mimetype),
+        Some(y) => y.match_bytes(bytes, mimetype),
     }
 }
 
@@ -316,11 +316,11 @@ pub fn from_u8(bytes: &[u8]) -> Mime {
 }
 
 /// Internal function. Checks if an alias exists, and if it does,
-/// then runs `from_filepath`.
+/// then runs `match_filepath`.
 fn match_filepath_noalias(mimetype: &str, filepath: &Path) -> bool {
     match CHECKER_SUPPORT.get(mimetype) {
         None => false,
-        Some(c) => c.from_filepath(filepath, mimetype),
+        Some(c) => c.match_filepath(filepath, mimetype),
     }
 }
 

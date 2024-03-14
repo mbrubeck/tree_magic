@@ -7,12 +7,12 @@ use std::path::Path;
 pub(crate) struct FdoMagic;
 
 impl crate::Checker for FdoMagic {
-    fn from_u8(&self, file: &[u8], mimetype: &str) -> bool {
-        from_u8(file, mimetype)
+    fn match_bytes(&self, file: &[u8], mimetype: &str) -> bool {
+        match_bytes(file, mimetype)
     }
 
-    fn from_filepath(&self, filepath: &Path, mimetype: &str) -> bool {
-        from_filepath(filepath, mimetype)
+    fn match_filepath(&self, filepath: &Path, mimetype: &str) -> bool {
+        match_filepath(filepath, mimetype)
     }
 
     fn get_supported(&self) -> Vec<Mime> {
@@ -30,7 +30,7 @@ impl crate::Checker for FdoMagic {
 
 /// Test against all rules
 #[allow(unused_variables)]
-pub fn from_u8(file: &[u8], mimetype: &str) -> bool {
+pub fn match_bytes(file: &[u8], mimetype: &str) -> bool {
     // Get magic ruleset
     let Some(graph) = ALL_RULES.get(mimetype) else {
         return false;
@@ -45,7 +45,7 @@ pub fn from_u8(file: &[u8], mimetype: &str) -> bool {
 /// This only exists for the case of a direct match_filepath call
 /// and even then we could probably get rid of this...
 #[allow(unused_variables)]
-pub fn from_filepath(filepath: &Path, mimetype: &str) -> bool {
+pub fn match_filepath(filepath: &Path, mimetype: &str) -> bool {
     // Get magic ruleset
     let Some(magic_rules) = ALL_RULES.get(mimetype) else {
         return false;
@@ -62,5 +62,5 @@ pub fn from_filepath(filepath: &Path, mimetype: &str) -> bool {
         return false;
     };
 
-    from_u8(&bytes, mimetype)
+    match_bytes(&bytes, mimetype)
 }
