@@ -1,4 +1,5 @@
-///! Enable loading the magic database files at runtime rather than embedding the GPLed database
+//! Enable loading the magic database files at runtime rather than embedding the GPLed database
+
 use std::fs::File;
 use std::io::Read;
 
