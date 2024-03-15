@@ -364,15 +364,6 @@ pub fn match_filepath(mimetype: &str, path: &Path) -> bool {
 }
 
 /// Gets the type of a file, starting at a certain node in the type graph.
-///
-/// Returns MIME as string wrapped in Some if a type matches, or
-/// None if the file is not found or cannot be opened.
-/// Retreive the node from the `TYPE.hash` FnvHashMap, using the MIME as the key.
-///
-/// # Panics
-/// Will panic if the given node is not found in the graph.
-/// As the graph is immutable, this should not happen if the node index comes from
-/// `TYPE.hash`.
 fn from_file_node(parentnode: NodeIndex, file: &File) -> Option<Mime> {
     // We're actually just going to thunk this down to a u8
     // unless we're checking via basetype for speed reasons.
@@ -389,11 +380,9 @@ fn from_file_node(parentnode: NodeIndex, file: &File) -> Option<Mime> {
     from_u8_node(parentnode, &bytes)
 }
 
-/// Gets the type of a file.
+/// Gets the MIME type of a file.
 ///
 /// Does not look at file name or extension, just the contents.
-/// Returns MIME as string wrapped in Some if a type matches, or
-/// None if the file is not found or cannot be opened.
 ///
 /// # Examples
 /// ```rust
@@ -411,11 +400,11 @@ pub fn from_file(file: &File) -> Option<Mime> {
     from_file_node(node, file)
 }
 
-/// Gets the type of a file from a filepath.
+/// Gets the MIME type of a file.
 ///
 /// Does not look at file name or extension, just the contents.
-/// Returns MIME as string wrapped in Some if a type matches, or
-/// None if the file is not found or cannot be opened.
+/// Returns None if the file is cannot be opened
+/// or if no matching MIME type is found.
 ///
 /// # Examples
 /// ```rust
