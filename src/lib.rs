@@ -403,7 +403,7 @@ pub fn from_file(file: &File) -> Option<Mime> {
 /// Gets the MIME type of a file.
 ///
 /// Does not look at file name or extension, just the contents.
-/// Returns None if the file is cannot be opened
+/// Returns None if the file cannot be opened
 /// or if no matching MIME type is found.
 ///
 /// # Examples
