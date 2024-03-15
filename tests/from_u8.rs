@@ -84,6 +84,14 @@ mod from_u8 {
 
     /// Text tests
     #[test]
+    fn text_html() {
+        assert_eq!(
+            tree_magic::from_u8(include_bytes!("text/html")),
+            convmime!("text/html")
+        );
+    }
+
+    #[test]
     fn text_plain() {
         assert_eq!(
             tree_magic::from_u8(include_bytes!("text/plain")),
