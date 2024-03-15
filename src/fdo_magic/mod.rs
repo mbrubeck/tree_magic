@@ -3,7 +3,7 @@
 pub mod builtin;
 
 #[derive(Debug, Clone)]
-struct MagicRule<'a> {
+pub struct MagicRule<'a> {
     indent_level: u32,
     start_off: u32,
     val: &'a [u8],
