@@ -21,6 +21,7 @@ fn subclasses() -> &'static str {
 pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
     aliases()
         .lines()
+        .filter(|line| !line.is_empty())
         .map(|line| {
             let mut parts = line.split_whitespace();
             let a = parts.next().unwrap();
@@ -39,6 +40,7 @@ pub fn get_supported() -> Vec<Mime> {
 pub fn get_subclasses() -> Vec<(Mime, Mime)> {
     subclasses()
         .lines()
+        .filter(|line| !line.is_empty())
         .map(|line| {
             let mut parts = line.split_whitespace();
 
