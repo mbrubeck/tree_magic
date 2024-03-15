@@ -19,7 +19,7 @@ fn search_paths(filename: &str) -> Vec<PathBuf> {
     if let Some(home) = home::home_dir() {
         search_paths.push(home.join(".local/share/mime").join(filename));
     }
-    dbg!(search_paths)
+    search_paths
 }
 
 /// Load the magic database from the predefined locations in the XDG standard
