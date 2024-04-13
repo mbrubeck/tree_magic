@@ -1,5 +1,5 @@
 use crate::Mime;
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 
 pub fn get_supported() -> Vec<Mime> {
     super::TYPES.to_vec()
@@ -15,6 +15,6 @@ pub fn get_subclasses() -> Vec<(Mime, Mime)> {
     ]
 }
 
-pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
-    FnvHashMap::default()
+pub fn get_aliaslist() -> HashMap<Mime, Mime> {
+    HashMap::default()
 }

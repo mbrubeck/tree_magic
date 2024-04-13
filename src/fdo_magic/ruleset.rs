@@ -1,6 +1,6 @@
 use super::MagicRule;
 
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 use nom::{
     bytes::complete::{is_not, tag, take, take_while},
     character::is_digit,
@@ -99,7 +99,7 @@ fn gen_graph(magic_rules: Vec<MagicRule<'_>>) -> DiGraph<MagicRule<'_>, u32> {
 }
 
 #[cfg(feature = "with-gpl-data")]
-pub fn from_u8(b: &[u8]) -> Result<FnvHashMap<&str, DiGraph<MagicRule<'_>, u32>>, String> {
+pub fn from_u8(b: &[u8]) -> Result<HashMap<&str, DiGraph<MagicRule<'_>, u32>>, String> {
     let tuplevec = ruleset(b).map_err(|e| e.to_string())?.1;
     let res = tuplevec
         .into_iter()
@@ -112,7 +112,7 @@ pub fn from_u8(b: &[u8]) -> Result<FnvHashMap<&str, DiGraph<MagicRule<'_>, u32>>
 /// Parse multiple ruleset magic files and aggregate the tuples into a single graph
 pub fn from_multiple(
     files: &[Vec<u8>],
-) -> Result<FnvHashMap<&str, DiGraph<MagicRule<'_>, u32>>, String> {
+) -> Result<HashMap<&str, DiGraph<MagicRule<'_>, u32>>, String> {
     let mut tuplevec = vec![];
     for slice in files {
         tuplevec.append(&mut ruleset(slice.as_ref()).map_err(|e| e.to_string())?.1);

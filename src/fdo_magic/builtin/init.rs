@@ -1,5 +1,5 @@
 use crate::Mime;
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 
 #[cfg(not(feature = "with-gpl-data"))]
 use super::runtime;
@@ -18,7 +18,7 @@ fn subclasses() -> &'static str {
     return runtime::subclasses();
 }
 
-pub fn get_aliaslist() -> FnvHashMap<Mime, Mime> {
+pub fn get_aliaslist() -> HashMap<Mime, Mime> {
     aliases()
         .lines()
         .filter(|line| !line.is_empty())

@@ -3,7 +3,7 @@
 use std::fs::{read, read_to_string};
 use std::path::PathBuf;
 
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 use once_cell::sync::OnceCell;
 use petgraph::prelude::DiGraph;
 
@@ -51,7 +51,7 @@ pub fn subclasses() -> &'static str {
     SUBCLASS_STRING.get_or_init(|| load_concat_strings("subclasses"))
 }
 
-pub fn rules() -> Result<FnvHashMap<Mime, DiGraph<MagicRule<'static>, u32>>, String> {
+pub fn rules() -> Result<HashMap<Mime, DiGraph<MagicRule<'static>, u32>>, String> {
     static RUNTIME_RULES: OnceCell<Vec<Vec<u8>>> = OnceCell::new();
     let files = RUNTIME_RULES.get_or_init(load_xdg_shared_magic);
     ruleset::from_multiple(files)
