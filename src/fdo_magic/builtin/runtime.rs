@@ -15,6 +15,7 @@ fn search_paths(filename: &str) -> Vec<PathBuf> {
     let mut search_paths = vec![
         PathBuf::from("/usr/share/mime").join(filename),
         PathBuf::from("/usr/local/share/mime").join(filename),
+        PathBuf::from("//opt/homebrew/share/mime").join(filename),
     ];
     if let Some(home) = home::home_dir() {
         search_paths.push(home.join(".local/share/mime").join(filename));
