@@ -1,5 +1,5 @@
 use crate::{read_bytes, Mime};
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 use std::fs::File;
 
 pub(crate) struct BaseType;
@@ -42,7 +42,7 @@ impl crate::Checker for BaseType {
         super::init::get_subclasses()
     }
 
-    fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime> {
+    fn get_aliaslist(&self) -> HashMap<Mime, Mime> {
         super::init::get_aliaslist()
     }
 }

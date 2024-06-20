@@ -1,6 +1,6 @@
 use super::ALL_RULES;
 use crate::{fdo_magic::check::from_u8_walker, read_bytes, Mime};
-use fnv::FnvHashMap;
+use std::collections::HashMap;
 use petgraph::prelude::*;
 use std::fs::File;
 
@@ -47,7 +47,7 @@ impl crate::Checker for FdoMagic {
         super::init::get_subclasses()
     }
 
-    fn get_aliaslist(&self) -> FnvHashMap<Mime, Mime> {
+    fn get_aliaslist(&self) -> HashMap<Mime, Mime> {
         super::init::get_aliaslist()
     }
 }
