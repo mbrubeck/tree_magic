@@ -1,5 +1,6 @@
 //! Enable loading the magic database files at runtime rather than embedding the GPLed database
 
+use std::env;
 use std::fs::{read, read_to_string};
 use std::path::PathBuf;
 
@@ -11,15 +12,30 @@ use super::MagicRule;
 use crate::fdo_magic::ruleset;
 use crate::Mime;
 
-fn search_paths(filename: &str) -> Vec<PathBuf> {
-    let mut search_paths = vec![
-        PathBuf::from("/usr/share/mime").join(filename),
-        PathBuf::from("/usr/local/share/mime").join(filename),
-        PathBuf::from("/opt/homebrew/share/mime").join(filename),
-    ];
-    if let Some(home) = home::home_dir() {
-        search_paths.push(home.join(".local/share/mime").join(filename));
+fn paths_from_env_var(var: &str, filename: &str, buffer: &mut Vec<PathBuf>) {
+    for dir in var.split(':') {
+        buffer.push(PathBuf::from(dir).join("mime").join(filename));
     }
+}
+
+fn search_paths(filename: &str) -> Vec<PathBuf> {
+    let mut search_paths: Vec<PathBuf> = Vec::new();
+    let dirs = env::var("XDG_DATA_DIRS").unwrap_or("/usr/local/share/:/usr/share/".to_string());
+    paths_from_env_var(&dirs, filename, &mut search_paths);
+
+    let dirs = env::var("XDG_DATA_HOME").or_else(|_| {
+        env::var("HOME").map(|home| {
+            PathBuf::from(home)
+                .join(".local/share")
+                .to_string_lossy()
+                .to_string()
+        })
+    });
+    if let Ok(dirs) = dirs {
+        paths_from_env_var(&dirs, filename, &mut search_paths);
+    }
+    #[cfg(target_os = "macos")]
+    paths_from_env_var("/opt/homebrew/share", filename, &mut search_paths);
     search_paths
 }
 

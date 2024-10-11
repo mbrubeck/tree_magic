@@ -1,6 +1,6 @@
 [package]
 name = "tree_magic_mini"
-version = "3.1.5"
+version = "3.1.6"
 authors = [
     "Matt Brubeck <mbrubeck@limpet.net>",
     "Allison Hancock <aahancoc@umich.edu>",
@@ -16,7 +16,6 @@ exclude = ["tests/*", "benches/*/"]
 edition = "2021"
 
 [dependencies]
-home = "0.5.0"
 petgraph = "0.6.0"
 nom = "7.0"
 fnv = "1.0"
