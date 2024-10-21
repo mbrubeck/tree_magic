@@ -24,7 +24,7 @@ once_cell = "1.0"
 tree_magic_db = { version = "3.0", path = "./magic_db" , optional = true }
 
 [features]
-with-gpl-data = ["tree_magic_db"]
+with-gpl-data = ["dep:tree_magic_db"]
 
 [dev-dependencies]
 bencher = "0.1.0"
