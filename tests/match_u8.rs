@@ -3,6 +3,13 @@ mod match_u8 {
 
     ///Image tests
     #[test]
+    fn image_heic() {
+        assert!(tree_magic::match_u8(
+            "image/heif",
+            include_bytes!("image/heic")
+        ));
+    }
+    #[test]
     fn image_gif() {
         assert!(tree_magic::match_u8(
             "image/gif",

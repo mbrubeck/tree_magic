@@ -9,6 +9,13 @@ mod from_u8 {
 
     ///Image tests
     #[test]
+    fn image_heic() {
+        assert_eq!(
+            tree_magic::from_u8(include_bytes!("image/heic")),
+            convmime!("image/heif")
+        );
+    }
+    #[test]
     fn image_gif() {
         assert_eq!(
             tree_magic::from_u8(include_bytes!("image/gif")),
