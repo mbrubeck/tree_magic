@@ -8,7 +8,7 @@ them in your project, it must be licensed in a compatible manner.
 
 # References
 
-- [xdg-shared-mime-info Repository](https://github.com/freedesktop/xdg-shared-mime-info)
+- [xdg-shared-mime-info Repository](https://gitlab.freedesktop.org/xdg/shared-mime-info)
 - [FreeDesktop shared-mime-info Spec](https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/)
 
 # Licence
