@@ -1,8 +1,9 @@
 //! Enable loading the magic database files at runtime rather than embedding the GPLed database
 
-use std::env;
+use std::env::{split_paths, var_os};
+use std::ffi::OsString;
 use std::fs::{read, read_to_string};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use fnv::FnvHashMap;
 use once_cell::sync::OnceCell;
@@ -12,31 +13,31 @@ use super::MagicRule;
 use crate::fdo_magic::ruleset;
 use crate::Mime;
 
-fn paths_from_env_var(var: &str, filename: &str, buffer: &mut Vec<PathBuf>) {
-    for dir in var.split(':') {
-        buffer.push(PathBuf::from(dir).join("mime").join(filename));
-    }
+fn mime_path(base: &Path, filename: &str) -> PathBuf {
+    base.join("mime").join(filename)
 }
 
 fn search_paths(filename: &str) -> Vec<PathBuf> {
-    let mut search_paths: Vec<PathBuf> = Vec::new();
-    let dirs = env::var("XDG_DATA_DIRS").unwrap_or("/usr/local/share/:/usr/share/".to_string());
-    paths_from_env_var(&dirs, filename, &mut search_paths);
+    let mut paths = Vec::new();
 
-    let dirs = env::var("XDG_DATA_HOME").or_else(|_| {
-        env::var("HOME").map(|home| {
-            PathBuf::from(home)
-                .join(".local/share")
-                .to_string_lossy()
-                .to_string()
-        })
-    });
-    if let Ok(dirs) = dirs {
-        paths_from_env_var(&dirs, filename, &mut search_paths);
+    let data_dirs = match var_os("XDG_DATA_DIRS") {
+        Some(dirs) if !dirs.is_empty() => dirs,
+        _ => OsString::from("/usr/local/share/:/usr/share/"),
+    };
+    paths.extend(split_paths(&data_dirs).map(|base| mime_path(&base, filename)));
+
+    let data_home = match var_os("XDG_DATA_HOME") {
+        Some(data_home) if !data_home.is_empty() => Some(PathBuf::from(data_home)),
+        _ => var_os("HOME").map(|home| Path::new(&home).join(".local/share")),
+    };
+    if let Some(data_home) = data_home {
+        paths.push(mime_path(&data_home, filename));
     }
+
     #[cfg(target_os = "macos")]
-    paths_from_env_var("/opt/homebrew/share", filename, &mut search_paths);
-    search_paths
+    paths.push(mime_path(Path::new("/opt/homebrew/share"), filename));
+
+    paths
 }
 
 /// Load the magic database from the predefined locations in the XDG standard
