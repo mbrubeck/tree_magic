@@ -56,8 +56,11 @@
 
 use petgraph::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::ffi::{CStr, CString, c_char};
 use std::fs::File;
 use std::io::prelude::*;
+use std::mem;
+use std::os::fd::{FromRawFd, RawFd};
 use std::path::Path;
 use std::sync::LazyLock;
 
@@ -279,6 +282,43 @@ pub fn match_u8(mimetype: &str, bytes: &[u8]) -> bool {
     match_u8_noalias(get_alias(mimetype), bytes)
 }
 
+/// FFI wrapper for `match_u8`.
+///
+/// Checks if the given byte array matches the given MIME type.
+///
+/// # Safety
+/// - `mimetype` must be a valid null-terminated C string
+/// - `bytes` must be a valid pointer to a byte array of at least `len` bytes
+/// - `len` must be the correct length of the byte array
+/// - The byte array must remain valid for the duration of this call
+///
+/// # Arguments
+/// * `mimetype` - Null-terminated C string containing the MIME type
+/// * `bytes` - Pointer to the byte array
+/// * `len` - Length of the byte array in bytes
+///
+/// # Returns
+/// Returns `true` if the byte array matches the given MIME type.
+/// Returns `false` if the byte array is null, the given MIME type is not known,
+/// or if `mimetype` is not a valid null-terminated C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tree_magic_mini_match_u8(
+    mimetype: *const c_char,
+    bytes: *const u8,
+    len: usize,
+) -> bool {
+    if mimetype.is_null() || bytes.is_null() {
+        return false;
+    }
+
+    let Ok(mimetype_str) = unsafe { CStr::from_ptr(mimetype) }.to_str() else {
+        return false;
+    };
+
+    let bytes_slice = unsafe { std::slice::from_raw_parts(bytes, len) };
+    match_u8(mimetype_str, bytes_slice)
+}
+
 /// Gets the type of a file from a raw bytestream, starting at a certain node
 /// in the type graph.
 ///
@@ -315,6 +355,40 @@ pub fn from_u8(bytes: &[u8]) -> Mime {
     from_u8_node(node, bytes).unwrap()
 }
 
+/// FFI wrapper for `from_u8`.
+///
+/// Gets the MIME type of a file from a byte array.
+///
+/// # Safety
+/// - `bytes` must be a valid pointer to a byte array of at least `len` bytes
+/// - `len` must be the correct length of the byte array
+/// - The byte array must remain valid for the duration of this call
+///
+/// # Arguments
+/// * `bytes` - Pointer to the byte array
+/// * `len` - Length of the byte array in bytes
+///
+/// # Returns
+/// Returns a pointer to a static string containing the MIME type if found.
+/// Returns a null pointer if the byte array is null, no match is found, or if
+/// no filetype definitions are loaded.
+/// The string is valid for the lifetime of the program and should not be freed.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tree_magic_mini_from_u8(bytes: *const u8, len: usize) -> *const c_char {
+    if bytes.is_null() {
+        return std::ptr::null();
+    }
+
+    let bytes_slice = unsafe { std::slice::from_raw_parts(bytes, len) };
+
+    // Handle potential panics from from_u8 gracefully
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| from_u8(bytes_slice)));
+    match result {
+        Ok(mime) => mime.as_ptr() as *const c_char,
+        Err(_) => std::ptr::null(),
+    }
+}
+
 /// Check if the given file matches the given MIME type.
 ///
 /// # Examples
@@ -330,6 +404,39 @@ pub fn from_u8(bytes: &[u8]) -> Mime {
 /// ```
 pub fn match_file(mimetype: &str, file: &File) -> bool {
     match_file_noalias(get_alias(mimetype), file)
+}
+
+/// FFI wrapper for `match_file`.
+///
+/// Check if the file descriptor matches the given MIME type.
+///
+/// # Safety
+/// - `mimetype` must be a valid null-terminated C string
+/// - `fd` must be a valid file descriptor
+/// - The file descriptor must remain valid for the duration of this call
+/// - The file descriptor will NOT be closed by this function
+///
+/// # Arguments
+/// * `mimetype` - Null-terminated C string
+/// * `fd` - File descriptor
+///
+/// # Returns
+/// Returns `true` if the file descriptor matches the given MIME type.
+/// Returns `false` if the file descriptor could not be read, the given MIME type is not known,
+/// or any of the arguments is not a valid null-terminated C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tree_magic_mini_match_fd(mimetype: *const c_char, fd: RawFd) -> bool {
+    if mimetype.is_null() {
+        return false;
+    }
+
+    let file = unsafe { File::from_raw_fd(fd) };
+
+    let Ok(mimetype) = unsafe { CStr::from_ptr(mimetype) }.to_str() else {
+        return false;
+    };
+
+    match_file(mimetype, &file)
 }
 
 /// Internal function. Checks if an alias exists, and if it does,
@@ -362,6 +469,46 @@ pub fn match_filepath(mimetype: &str, path: &Path) -> bool {
         return false;
     };
     match_file(mimetype, &file)
+}
+
+/// FFI wrapper for `match_filepath`.
+///
+/// Check if the file at the given path matches the given MIME type.
+///
+/// # Safety
+/// - `mimetype` must be a valid null-terminated C string
+/// - `path` must be a valid null-terminated C string
+///
+/// # Arguments
+/// * `mimetype` - Null-terminated C string
+/// * `path` - Null-terminated C string containing the file path
+///
+/// # Returns
+/// Returns `true` if the file at the given path matches the given MIME type.
+/// Returns `false` if the file could not be read, the given MIME type is not known,
+/// or any of the arguments is not a valid null-terminated C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tree_magic_mini_match_filepath(
+    mimetype: *const c_char,
+    path: *const c_char,
+) -> bool {
+    if path.is_null() || mimetype.is_null() {
+        return false;
+    }
+
+    let path = {
+        let Ok(path_str) = unsafe { CStr::from_ptr(path) }.to_str() else {
+            return false;
+        };
+
+        Path::new(path_str)
+    };
+
+    let Ok(mimetype) = unsafe { CStr::from_ptr(mimetype) }.to_str() else {
+        return false;
+    };
+
+    match_filepath(mimetype, path)
 }
 
 /// Gets the type of a file, starting at a certain node in the type graph.
@@ -401,6 +548,41 @@ pub fn from_file(file: &File) -> Option<Mime> {
     from_file_node(node, file)
 }
 
+/// FFI wrapper for `from_file`.
+///
+/// Gets the MIME type of a file from an open file handle.
+///
+/// # Safety
+/// - `fd` must be a valid file descriptor
+/// - The file descriptor must remain valid for the duration of this call
+/// - The file descriptor will NOT be closed by this function
+///
+/// # Arguments
+/// * `fd` - File descriptor
+///
+/// # Returns
+/// Returns a pointer to a static string containing the MIME type if found,
+/// or a null pointer if no matching MIME type is found.
+/// The string is valid for the lifetime of the program and should not be freed.
+#[cfg(unix)]
+#[unsafe(no_mangle)]
+pub extern "C" fn tree_magic_mini_from_fd(fd: RawFd) -> *const c_char {
+    let file = mem::ManuallyDrop::new(unsafe { File::from_raw_fd(fd) });
+
+    match from_file(&file) {
+        Some(mime) => {
+            let cstr = match CString::new(mime) {
+                Ok(c) => c,
+                Err(_) => return std::ptr::null(),
+            };
+            let ptr = cstr.as_ptr();
+            std::mem::forget(cstr);
+            ptr
+        }
+        None => std::ptr::null(),
+    }
+}
+
 /// Gets the MIME type of a file.
 ///
 /// Does not look at file name or extension, just the contents.
@@ -422,6 +604,37 @@ pub fn from_file(file: &File) -> Option<Mime> {
 pub fn from_filepath(path: &Path) -> Option<Mime> {
     let file = File::open(path).ok()?;
     from_file(&file)
+}
+
+/// FFI wrapper for `from_filepath`.
+///
+/// Gets the MIME type of a file from a file path.
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+///
+/// # Arguments
+/// * `path` - Null-terminated C string containing the file path
+///
+/// # Returns
+/// Returns a pointer to a static string containing the MIME type if found,
+/// or a null pointer if the file cannot be opened or no matching MIME type is found.
+/// The string is valid for the lifetime of the program and should not be freed.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tree_magic_mini_from_filepath(path: *const c_char) -> *const c_char {
+    if path.is_null() {
+        return std::ptr::null();
+    }
+
+    let Ok(path_str) = unsafe { CStr::from_ptr(path) }.to_str() else {
+        return std::ptr::null();
+    };
+
+    let path = Path::new(path_str);
+    match from_filepath(path) {
+        Some(mime) => mime.as_ptr() as *const c_char,
+        None => std::ptr::null(),
+    }
 }
 
 /// Reads the given number of bytes from a file

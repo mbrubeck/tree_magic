@@ -16,6 +16,10 @@ exclude = ["tests/*", "benches/*/"]
 edition = "2024"
 rust-version = "1.85"
 
+[lib]
+name = "tree_magic_mini"
+crate-type = ["cdylib", "staticlib"]
+
 [dependencies]
 petgraph = { version = "0.8.0", default-features = false }
 nom = "8.0"

@@ -1,0 +1,10 @@
+prefix=@PREFIX@
+includedir=@INCLUDE@
+libdir=@LIBDIR@
+
+Name: tree_magic_mini
+URL: https://github.com/mbrubeck/tree_magic
+Description: Determines the MIME type of a file by traversing a filetype tree.
+Version: @VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -ltree_magic_mini
