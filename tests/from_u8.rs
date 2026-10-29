@@ -131,6 +131,22 @@ mod from_u8 {
         );
     }
 
+    // XML with a UTF-8 byte order mark before the declaration. The rule for
+    // this is only in the bundled database, not in the system one.
+    #[cfg(feature = "with-gpl-data")]
+    #[test]
+    fn application_xml_utf8_bom() {
+        let xml = b"\xEF\xBB\xBF<?xml version=\"1.0\"?><a/>";
+        assert_eq!(tree_magic::from_u8(xml), convmime!("application/xml"));
+    }
+
+    #[cfg(feature = "with-gpl-data")]
+    #[test]
+    fn image_svg_utf8_bom() {
+        let svg = b"\xEF\xBB\xBF<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"/>";
+        assert_eq!(tree_magic::from_u8(svg), convmime!("image/svg+xml"));
+    }
+
     // Audio tests
     #[test]
     fn audio_flac() {
