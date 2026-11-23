@@ -55,7 +55,7 @@
 //! ```
 
 use petgraph::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -145,10 +145,9 @@ static TYPE: LazyLock<TypeStruct> = LazyLock::new(|| {
         added_mimes.insert(mimetype, node);
     }
 
-    let mut edge_list = HashSet::<(NodeIndex, NodeIndex)>::with_capacity_and_hasher(
-        edgelist_raw.len(),
-        Default::default(),
-    );
+    // Ordered sets, so that the order of children (and with it the result for
+    // inputs that match several sibling types) does not depend on the hash seed
+    let mut edge_list = BTreeSet::<(NodeIndex, NodeIndex)>::new();
     for (child_raw, parent_raw) in &edgelist_raw {
         let Some(parent) = added_mimes.get(parent_raw) else {
             continue;
@@ -179,7 +178,7 @@ static TYPE: LazyLock<TypeStruct> = LazyLock::new(|| {
         .entry("all/allfiles")
         .or_insert_with(|| graph.add_node("all/allfiles"));
 
-    let mut edge_list_2 = HashSet::<(NodeIndex, NodeIndex)>::default();
+    let mut edge_list_2 = BTreeSet::<(NodeIndex, NodeIndex)>::new();
     for mimenode in graph.externals(Incoming) {
         let mimetype = &graph[mimenode];
         let toplevel = mimetype.split('/').next().unwrap_or("");

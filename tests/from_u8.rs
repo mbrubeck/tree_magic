@@ -147,4 +147,34 @@ mod from_u8 {
             convmime!("audio/mpeg")
         );
     }
+
+    // This TGA also matches image/x-win-bitmap, with the same priority. The
+    // answer must not depend on the per-process hash seed, so compare the
+    // results of several child processes.
+    #[test]
+    fn same_type_in_every_process() {
+        let tga = [
+            0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 24, 0, 0x10, 0x20, 0x30,
+        ];
+        if std::env::var_os("TREE_MAGIC_CHILD").is_some() {
+            println!("mime={}", tree_magic::from_u8(&tga));
+            return;
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        for _ in 0..16 {
+            let out = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "from_u8::same_type_in_every_process"])
+                .arg("--nocapture")
+                .env("TREE_MAGIC_CHILD", "1")
+                .output()
+                .unwrap();
+            let stdout = String::from_utf8(out.stdout).unwrap();
+            for line in stdout.lines() {
+                if let Some(mime) = line.strip_prefix("mime=") {
+                    seen.insert(mime.to_string());
+                }
+            }
+        }
+        assert_eq!(seen.len(), 1, "{seen:?}");
+    }
 }
