@@ -66,6 +66,44 @@ mod from_u8 {
         );
     }
 
+    // 1x1, 24-bit BMP whose info header is `header_size` bytes long
+    fn bmp(header_size: u32) -> Vec<u8> {
+        let off = 14 + header_size;
+        let mut b = b"BM".to_vec();
+        b.extend((off + 4).to_le_bytes());
+        b.extend([0; 4]);
+        b.extend(off.to_le_bytes());
+        b.extend(header_size.to_le_bytes());
+        b.extend([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 24, 0]);
+        b.resize(off as usize, 0);
+        b.extend([0, 0, 0xff, 0]);
+        b
+    }
+
+    // These rules have value bytes outside their mask ("BMxxxx\0\0" with
+    // mask 0xffff00000000ffff), so the mask must apply to both sides.
+    #[test]
+    fn image_bmp_v4_header() {
+        assert_eq!(tree_magic::from_u8(&bmp(108)), convmime!("image/bmp"));
+    }
+    #[test]
+    fn image_bmp_v5_header() {
+        assert_eq!(tree_magic::from_u8(&bmp(124)), convmime!("image/bmp"));
+    }
+    #[test]
+    fn image_jp2() {
+        let jp2 = b"\0\0\0\x0cjP  \r\n\x87\n\0\0\0\x14ftypjp2 \0\0\0\0jp2 ";
+        assert_eq!(tree_magic::from_u8(jp2), convmime!("image/jp2"));
+    }
+    #[test]
+    fn image_vnd_adobe_photoshop() {
+        let psd = b"8BPS\0\x01\0\0\0\0\0\0\0\x03\0\0\0\x01\0\0\0\x01\0\x08\0\x03";
+        assert_eq!(
+            tree_magic::from_u8(psd),
+            convmime!("image/vnd.adobe.photoshop")
+        );
+    }
+
     /// Archive tests
     #[test]
     fn application_tar() {

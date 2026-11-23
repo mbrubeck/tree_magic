@@ -14,13 +14,12 @@ fn from_u8_singlerule(bytes: &[u8], rule: &super::MagicRule) -> bool {
     let testarea = &bytes[bound_min..bound_max];
 
     testarea.windows(rule.val.len()).any(|window| {
-        // Apply mask to value
+        // Apply mask to both the value and the window
         match rule.mask {
             None => rule.val == window,
             Some(mask) => {
                 assert_eq!(window.len(), mask.len());
-                let masked = zip(window, mask).map(|(a, b)| a & b);
-                rule.val.iter().copied().eq(masked)
+                zip(zip(window, rule.val), mask).all(|((a, v), m)| a & m == v & m)
             }
         }
     })
